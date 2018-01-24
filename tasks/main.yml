@@ -1,0 +1,22 @@
+---
+
+# This does not work as of 2017-04-25 / ansible 2.2.2.0
+#- include_role: name=mit.zabbix-agent.common task_from=get-zabbix-agent-path
+- include_tasks: ../../mit.zabbix-agent.common/tasks/get-zabbix-agent-path.yml
+
+- name: Ensure needrestart is installed
+  apt: pkg=needrestart
+
+- name: Copy sudo rules for needrestart
+  copy: >
+    src=sudoers.d-local-mit-zabbix-agent-check-upgrades
+    dest=/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
+    validate='visudo -cf %s'
+
+- name: Add zabbix-agent configuration file
+  copy: src=local-userparameter_check-upgrades.conf
+        dest={{ zabbix_agent_conf_dir }}
+        mode=0644
+  notify: restart zabbix-agent
+  become: yes
+
