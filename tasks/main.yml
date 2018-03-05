@@ -4,8 +4,13 @@
 #- include_role: name=mit.zabbix-agent.common task_from=get-zabbix-agent-path
 - include_tasks: ../../mit.zabbix-agent.common/tasks/get-zabbix-agent-path.yml
 
-- name: Ensure needrestart is installed
-  apt: pkg=needrestart
+# We use ansible_lsb.id instead of ansible_distribution as this adds support for
+# UCS (Univention Corporate Server) which reports ansible_distribution=Debian and
+# ansible_lsb.id=Univention
+- include_tasks: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_system }}-{{ ansible_lsb.id }}_{{ ansible_lsb.major_release }}.yml"
+    - "default.yml"
 
 - name: Copy sudo rules for needrestart
   copy: >

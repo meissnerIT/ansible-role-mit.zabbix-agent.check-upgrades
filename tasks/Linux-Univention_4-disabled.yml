@@ -1,0 +1,22 @@
+---
+
+# This works but needrestart needs some more perl packages. As of 2018-01-31 I have simply
+# added the jessie sources to the host, installed needrestart including the perl libraries
+# and removed the sources.
+
+- name: Get needrestart url
+  shell: curl -s https://packages.debian.org/jessie/all/needrestart/download | awk -F '"' '/ftp.de.debian.org\/debian\/pool\/main\/n/ { print $2; }' | xargs basename
+  args:
+    # Disables "[WARNING]: Consider using get_url or uri module rather than running curl"
+    warn: no
+  changed_when: false
+  register: url
+
+- name: "Downloading {{ url.stdout }}"
+  # Providing the name of the destination file will skip the download if the file exists
+  get_url: url=http://ftp.de.debian.org/debian/pool/main/n/needrestart/{{ url.stdout }} dest=/var/cache/apt/archives/{{ url.stdout }}
+
+- name: "Installing deb"
+  #command: dpkg -i /var/cache/apt/archives/{{ url_zsh.stdout }} /var/cache/apt/archives/{{ url_zsh_common.stdout }}
+  apt: deb=/var/cache/apt/archives/{{ url.stdout }}
+
