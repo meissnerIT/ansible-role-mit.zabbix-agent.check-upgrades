@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Distributed via ansible - mit.zabbix-agent.check-upgrades
+#
+# echo "RESTART_SERVICES=true" | sudo tee -a /etc/default/mit-check-upgrades
+
+if [ -f /etc/default/mit-check-upgrades ]; then
+    . /etc/default/mit-check-upgrades
+fi
+
+# Only run if dpkg.log has changed
+SHA1SUM_NEW=$(sha1sum /var/log/dpkg.log | awk '{print $1}')
+if [ -f /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1 ]; then
+   SHA1SUM_OLD=$(cat /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1)
+else
+   SHA1SUM_OLD=0
+fi
+
+if [ ${SHA1SUM_OLD} = ${SHA1SUM_NEW} ]; then
+    #echo "No changes in /var/log/dpkg.log"
+    exit 0
+fi
+
+echo ${SHA1SUM_NEW} > /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
+
+if [ "${RESTART_SERVICES}" = "true" ]; then
+    for service in $(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }'); do
+        logger -t $0 "Restarting $service"
+        systemctl restart $service
+    done
+fi
+
+VALUE=$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')
+#echo "VALUE=${VALUE}"
+zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.library" --value ${VALUE} 1>/dev/null
+

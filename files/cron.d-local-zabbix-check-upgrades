@@ -1,0 +1,4 @@
+# Distributed via ansible - mit.zabbix-agent.check-upgrades
+
+*/5 * * * *     root    /usr/local/sbin/zabbix-check-upgrades
+

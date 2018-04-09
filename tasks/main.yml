@@ -20,3 +20,9 @@
   notify: restart zabbix-agent
   become: yes
 
+- name: Copy /usr/local/sbin/zabbix-check-upgrades
+  copy: src=zabbix-check-upgrades dest=/usr/local/sbin/zabbix-check-upgrades mode=0755
+
+- name: Copy /etc/cron.d/local-zabbix-check-upgrades
+  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
+
