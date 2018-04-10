@@ -3,3 +3,7 @@
 - name: Ensure needrestart is installed
   apt: pkg=needrestart
 
+- name: Ensure zabbix_sender is installed
+  shell: test -f /usr/bin/zabbix_sender
+  changed_when: no
+
