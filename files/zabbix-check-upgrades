@@ -8,6 +8,10 @@ if [ -f /etc/default/mit-check-upgrades ]; then
     . /etc/default/mit-check-upgrades
 fi
 
+# Delete file if older than 6 hours in order to force a complete check.
+[ -f /var/lib/misc/zabbix-check-upgrades-dpkg-log ] && \
+    find /var/lib/misc/zabbix-check-upgrades-dpkg-log -mmin +360 -delete
+
 # Only run if dpkg.log has changed
 if [ /var/log/dpkg.log -ot /var/lib/misc/zabbix-check-upgrades-dpkg-log ]; then
     #echo "No changes in /var/log/dpkg.log"

@@ -31,3 +31,6 @@
 - name: Copy /etc/cron.d/local-zabbix-check-upgrades
   copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
 
+- name: Remove deprecated /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
+  file: path=/var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1 state=absent
+

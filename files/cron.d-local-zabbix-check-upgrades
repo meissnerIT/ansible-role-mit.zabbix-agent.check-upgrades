@@ -1,4 +1,5 @@
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 
-*/5 * * * *     root    /usr/local/sbin/zabbix-check-upgrades
+#19078: needrestart auf otrs01 sichten -> Use of runtime loader module Module"
+*/5 * * * *     root    /usr/local/sbin/zabbix-check-upgrades 2>&1 | grep -v "Use of runtime loader module Module"
 
