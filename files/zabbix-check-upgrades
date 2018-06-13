@@ -2,12 +2,20 @@
 #
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 #
-# echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
-# echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
+# v2018-06-13-1
+#
+# grep -q RESTART_SERVICES /etc/default/mit-check-upgrades || echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
+# grep -q AUTOMATIC_REBOOT /etc/default/mit-check-upgrades || echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
 
-if [ -f /etc/default/mit-check-upgrades ]; then
-    . /etc/default/mit-check-upgrades
-fi
+RESTART_SERVICES_ONLY_AT_REBOOT_TIME=no
+# Reboot only on days equal or less than 5 (Friday)
+REBOOT_DAY=5
+# Reboot if hour of day is equal or above 0
+REBOOT_HOUR_MIN=0
+# Reboot if hour of day is equal or less than 6
+REBOOT_HOUR_MAX=6
+
+[ -r /etc/default/mit-check-upgrades ] && . /etc/default/mit-check-upgrades
 
 # Delete file if older than 6 hours in order to force a complete check.
 [ -f /var/lib/misc/zabbix-check-upgrades-dpkg-log ] && \
@@ -21,23 +29,39 @@ fi
 
 touch /var/lib/misc/zabbix-check-upgrades-dpkg-log
 
+function restart_service {
+    logger -t $0 "Restarting $1"
+    if [ -f /bin/systemctl ]; then
+        systemctl restart $1
+    else
+        /usr/sbin/service $1 restart
+    fi
+}
+
+DAY=$(date +%u)
+HOUR=$(date +%H)
+
 if [ "${RESTART_SERVICES}" = "yes" ]; then
     for service in $(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }'); do
-        logger -t $0 "Restarting $service"
-        systemctl restart $service
+        if [ ${RESTART_SERVICES_ONLY_AT_REBOOT_TIME} == "yes" ]; then
+            if [ ${DAY} -le ${REBOOT_DAY} ] \
+                    && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] \
+                    && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
+                restart_service $service
+            fi
+        else
+            restart_service $service
+        fi
     done
 fi
 
 VALUE=$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')
-#echo "VALUE=${VALUE}"
 /usr/bin/zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.library" -o "${VALUE}" 1>/dev/null
 
 if [ "${AUTOMATIC_REBOOT}" = "yes" ]; then
     NEEDRESTART_KSTA=$(/usr/sbin/needrestart -b -r l -k | awk ' /NEEDRESTART-KSTA:/ { print $2; }')
-    DAY=$(date +%u)
-    HOUR=$(date +%H)
-    # Restart only on weekdays before 7am
-    if [ ${NEEDRESTART_KSTA} -gt 1 ] && [ ${DAY} -lt 6 ] && [ ${HOUR} -lt 7 ] ; then
+    if [ ${NEEDRESTART_KSTA} -gt 1 ] && [ ${DAY} -le ${REBOOT_DAY} ] \
+            && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
         logger -t $0 "Restarting system (reboot)"
         /sbin/reboot
     fi
