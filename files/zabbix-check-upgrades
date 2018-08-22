@@ -17,9 +17,13 @@ REBOOT_HOUR_MAX=6
 
 [ -r /etc/default/mit-check-upgrades ] && . /etc/default/mit-check-upgrades
 
-# Delete file if older than 6 hours in order to force a complete check.
+# Check at least every 360 minutes and at max every 60
+DEL_TIME=$(((REBOOT_HOUR_MAX-REBOOT_HOUR_MIN)*60))
+DEL_TIME=$(($DEL_TIME>360?360:$DEL_TIME))
+
+# Delete file if older than DEL_TIME in order to force a complete check.
 [ -f /var/lib/misc/zabbix-check-upgrades-dpkg-log ] && \
-    find /var/lib/misc/zabbix-check-upgrades-dpkg-log -mmin +360 -delete
+    find /var/lib/misc/zabbix-check-upgrades-dpkg-log -mmin +${DEL_TIME} -delete
 
 # Only run if dpkg.log has changed
 if [ /var/log/dpkg.log -ot /var/lib/misc/zabbix-check-upgrades-dpkg-log ]; then

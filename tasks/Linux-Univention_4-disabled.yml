@@ -3,6 +3,9 @@
 # This works but needrestart needs some more perl packages. As of 2018-01-31 I have simply
 # added the jessie sources to the host, installed needrestart including the perl libraries
 # and removed the sources.
+#
+# As of 2018-07-11 I have simply enabled the "unmaintained repository", installed needrestart
+# incl. all required packages and disabled the "unmaintained repository" again.
 
 - name: Get needrestart url
   shell: curl -s https://packages.debian.org/jessie/all/needrestart/download | awk -F '"' '/ftp.de.debian.org\/debian\/pool\/main\/n/ { print $2; }' | xargs basename
