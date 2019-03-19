@@ -10,27 +10,14 @@
   with_first_found:
     - "{{ ansible_system }}-{{ ansible_lsb.id }}_{{ ansible_lsb.major_release }}.yml"
     - "default.yml"
+  when: ansible_lsb is defined and ansible_lsb.id is defined
 
-- name: Copy sudo rules for needrestart
-  copy: >
-    src=sudoers.d-local-mit-zabbix-agent-check-upgrades
-    dest=/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
-    validate='visudo -cf %s'
-
-- name: Add zabbix-agent configuration file
-  copy: src=local-userparameter_check-upgrades.conf
-        dest={{ zabbix_agent_conf_dir }}
-        mode=0644
-  notify: restart zabbix-agent
-  become: yes
-
-- name: Copy /usr/local/sbin/zabbix-check-upgrades
-  copy: src=zabbix-check-upgrades dest=/usr/local/sbin/zabbix-check-upgrades mode=0755
-
-- name: Copy /etc/cron.d/local-zabbix-check-upgrades
-  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
-  when: "'kcvmsrv3' not in inventory_hostname"
-
-- name: Remove deprecated /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
-  file: path=/var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1 state=absent
+# Ansible 2: with_first_found is always evaluated even if "when: false"
+# https://github.com/ansible/ansible/issues/13552
+- include_tasks: "{{ item }}"
+  with_first_found:
+    - files:
+      - "{{ ansible_system }}-{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+      skip: true
+  when: ansible_lsb is not defined or ansible_lsb.id is not defined
 
