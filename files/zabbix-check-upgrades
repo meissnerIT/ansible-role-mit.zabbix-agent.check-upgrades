@@ -59,7 +59,7 @@ if [ "${RESTART_SERVICES}" = "yes" ]; then
     done
 fi
 
-VALUE=$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')
+VALUE="$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')"
 /usr/bin/zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.library" -o "${VALUE}" 1>/dev/null
 
 if [ "${AUTOMATIC_REBOOT}" = "yes" ]; then
