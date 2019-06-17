@@ -18,6 +18,7 @@
   with_first_found:
     - files:
       - "{{ ansible_system }}-{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+      - "default.yml"
       skip: true
   when: ansible_lsb is not defined or ansible_lsb.id is not defined
 
