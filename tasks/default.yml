@@ -24,6 +24,9 @@
   notify: restart zabbix-agent
   become: yes
 
+- name: Copy /etc/default/mit-check-upgrades
+  copy: src=mit-check-upgrades dest=/etc/default/mit-check-upgrades force=no 
+
 - name: Copy /usr/local/sbin/zabbix-check-upgrades
   copy: src=zabbix-check-upgrades dest=/usr/local/sbin/zabbix-check-upgrades mode=0755
 

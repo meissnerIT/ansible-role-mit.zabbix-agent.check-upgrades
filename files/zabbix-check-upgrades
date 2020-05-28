@@ -2,7 +2,7 @@
 #
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 #
-# v2018-06-13-1
+# v2020-05-25-1
 #
 # grep -q RESTART_SERVICES /etc/default/mit-check-upgrades || echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
 # grep -q AUTOMATIC_REBOOT /etc/default/mit-check-upgrades || echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
@@ -64,10 +64,17 @@ VALUE="$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2
 
 if [ "${AUTOMATIC_REBOOT}" = "yes" ]; then
     NEEDRESTART_KSTA=$(/usr/sbin/needrestart -b -r l -k | awk ' /NEEDRESTART-KSTA:/ { print $2; }')
-    if [ ${NEEDRESTART_KSTA} -gt 1 ] && [ ${DAY} -le ${REBOOT_DAY} ] \
-            && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
-        logger -t $0 "Restarting system (reboot)"
-        /sbin/reboot
+    if [ ! -z "${NEEDRESTART_KSTA}" ]; then
+        if [ ${NEEDRESTART_KSTA} -gt 1 ] && [ ${DAY} -le ${REBOOT_DAY} ] \
+                && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
+            logger -t $0 "Restarting system (reboot)"
+            /sbin/reboot
+        fi
+    else
+        # No problem if running in a linux container (mfs1)
+        if ! tr '\0' '\n' < /proc/1/environ | grep -q "container=lxc"; then
+            echo "No NEEDRESTART-KSTA from needrestart"
+        fi
     fi
 fi
 
