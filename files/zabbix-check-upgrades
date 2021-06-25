@@ -33,30 +33,26 @@ fi
 
 touch /var/lib/misc/zabbix-check-upgrades-dpkg-log
 
-function restart_service {
-    logger -t $0 "Restarting $1"
-    if [ -f /bin/systemctl ]; then
-        systemctl restart $1
-    else
-        /usr/sbin/service $1 restart
-    fi
-}
-
 DAY=$(date +%u)
 HOUR=$(date +%H)
 
 if [ "${RESTART_SERVICES}" = "yes" ]; then
-    for service in $(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }'); do
+    # 2021-06-25: Switched from restarting every service via
+    #     service / systemctl to needrestart as needrestart has its own
+    #     special handling of special services like systemd-manager, see
+    #     /etc/needrestart/restart.d/README.needrestart
+    NEEDRESTARTSVC=$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }')
+    if [ -n "$NEEDRESTARTSVC" ]; then
         if [ ${RESTART_SERVICES_ONLY_AT_REBOOT_TIME} == "yes" ]; then
             if [ ${DAY} -le ${REBOOT_DAY} ] \
                     && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] \
                     && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
-                restart_service $service
+                /usr/sbin/needrestart -q -r a -l 1>/dev/null
             fi
         else
-            restart_service $service
+            /usr/sbin/needrestart -q -r a -l 1>/dev/null
         fi
-    done
+    fi
 fi
 
 VALUE="$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')"
