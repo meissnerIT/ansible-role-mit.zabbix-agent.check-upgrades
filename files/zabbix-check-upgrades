@@ -2,7 +2,7 @@
 #
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 #
-# v2020-05-25-1
+# v2021-06-29-1
 #
 # grep -q RESTART_SERVICES /etc/default/mit-check-upgrades || echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
 # grep -q AUTOMATIC_REBOOT /etc/default/mit-check-upgrades || echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
@@ -20,6 +20,10 @@ REBOOT_HOUR_MAX=6
 # Check at least every 360 minutes and at max every 60
 DEL_TIME=$(((REBOOT_HOUR_MAX-REBOOT_HOUR_MIN)*60))
 DEL_TIME=$(($DEL_TIME>360?360:$DEL_TIME))
+
+#20814: needrestart meldet "Unable to get Terminal Size"
+export COLUMNS=80
+export LINES=30
 
 # Delete file if older than DEL_TIME in order to force a complete check.
 [ -f /var/lib/misc/zabbix-check-upgrades-dpkg-log ] && \
