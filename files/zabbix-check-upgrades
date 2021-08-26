@@ -2,7 +2,7 @@
 #
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 #
-# v2021-06-29-1
+# v2021-08-26-1
 #
 # grep -q RESTART_SERVICES /etc/default/mit-check-upgrades || echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
 # grep -q AUTOMATIC_REBOOT /etc/default/mit-check-upgrades || echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
@@ -40,21 +40,34 @@ touch /var/lib/misc/zabbix-check-upgrades-dpkg-log
 DAY=$(date +%u)
 HOUR=$(date +%H)
 
+function restart_services {
+    # First we use needrestart as needrestart has its own special handling of
+    # special services like systemd-manager, see 
+    # /etc/needrestart/restart.d/README.needrestart
+    /usr/sbin/needrestart -q -r a -l 1>/dev/null
+    # Then we use systemctl / service for restarting services needrestart 
+    # skips ("Service restarts being deferred: systemd-logind.service")
+    for service in $(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }'); do
+        logger -t $0 "Restarting $service"
+        if [ -f /bin/systemctl ]; then
+            systemctl restart $service
+        else
+            /usr/sbin/service $service restart
+        fi
+    done
+}
+
 if [ "${RESTART_SERVICES}" = "yes" ]; then
-    # 2021-06-25: Switched from restarting every service via
-    #     service / systemctl to needrestart as needrestart has its own
-    #     special handling of special services like systemd-manager, see
-    #     /etc/needrestart/restart.d/README.needrestart
     NEEDRESTARTSVC=$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }')
     if [ -n "$NEEDRESTARTSVC" ]; then
         if [ ${RESTART_SERVICES_ONLY_AT_REBOOT_TIME} == "yes" ]; then
             if [ ${DAY} -le ${REBOOT_DAY} ] \
                     && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] \
                     && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
-                /usr/sbin/needrestart -q -r a -l 1>/dev/null
+                restart_services
             fi
         else
-            /usr/sbin/needrestart -q -r a -l 1>/dev/null
+            restart_services
         fi
     fi
 fi
