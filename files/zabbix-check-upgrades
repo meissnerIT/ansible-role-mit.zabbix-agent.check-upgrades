@@ -2,7 +2,7 @@
 #
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 #
-# v2021-08-26-1
+# v2021-11-17-1
 #
 # grep -q RESTART_SERVICES /etc/default/mit-check-upgrades || echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
 # grep -q AUTOMATIC_REBOOT /etc/default/mit-check-upgrades || echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
@@ -75,13 +75,26 @@ fi
 VALUE="$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')"
 /usr/bin/zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.library" -o "${VALUE}" 1>/dev/null
 
+# arg $1: Reason for reboot (logger)
+reboot_if_allowed() {
+    if [ ${DAY} -le ${REBOOT_DAY} ] \
+            && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
+        logger -t $0 "Restarting system ($1)"
+        /sbin/reboot
+        exit 0
+    fi
+}
+
 if [ "${AUTOMATIC_REBOOT}" = "yes" ]; then
+    # Ubuntu
+    if [ -f /var/run/reboot-required.pkgs ] ; then
+        reboot_if_allowed "(/var/run/reboot-required.pkgs -> $(paste -s -d, </var/run/reboot-required.pkgs))"
+    fi
+
     NEEDRESTART_KSTA=$(/usr/sbin/needrestart -b -r l -k | awk ' /NEEDRESTART-KSTA:/ { print $2; }')
     if [ ! -z "${NEEDRESTART_KSTA}" ]; then
-        if [ ${NEEDRESTART_KSTA} -gt 1 ] && [ ${DAY} -le ${REBOOT_DAY} ] \
-                && [ ${HOUR} -ge ${REBOOT_HOUR_MIN}  ] && [ ${HOUR} -le ${REBOOT_HOUR_MAX} ] ; then
-            logger -t $0 "Restarting system (reboot)"
-            /sbin/reboot
+        if [ ${NEEDRESTART_KSTA} -gt 1 ]; then
+            reboot_if_allowed "needrestart"
         fi
     else
         # No problem if running in a linux container (mfs1)
