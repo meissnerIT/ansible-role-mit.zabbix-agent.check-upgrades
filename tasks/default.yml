@@ -11,16 +11,17 @@
   changed_when: no
 
 - name: Copy sudo rules for needrestart
-  copy: >
-    src=sudoers.d-local-mit-zabbix-agent-check-upgrades
-    dest=/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
-    mode=0440
-    validate='visudo -cf %s'
+  copy:
+    src: sudoers.d-local-mit-zabbix-agent-check-upgrades
+    dest: /etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
+    mode: 0440
+    validate: 'visudo -cf %s'
 
 - name: Add zabbix-agent configuration file
-  copy: src=local-userparameter_check-upgrades.conf
-        dest={{ zabbix_agent_conf_dir }}
-        mode=0644
+  copy:
+    src: local-userparameter_check-upgrades.conf
+    dest: "{{ zabbix_agent_conf_dir }}"
+    mode: 0644
   notify: restart zabbix-agent
   become: yes
 
@@ -38,6 +39,10 @@
 - name: Remove deprecated /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
   file: path=/var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1 state=absent
 
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
 - name: Logcheck rules
   # The file has to be named "local", either "a", "0-mit-zabbix-agent-check-upgrades"
   # or "mit-zabbix-agent-check-upgrades" do not work. Test with:
@@ -46,5 +51,5 @@
     create: yes
     path: /etc/logcheck/violations.ignore.d/local
     line: '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:   zabbix : PWD=\/ ; USER=root ; COMMAND=\/usr\/sbin\/needrestart -b -r l -k$'
-  when: (ansible_distribution == "Debian" and ansible_distribution_major_version|int == 11)
+  when: "'logcheck' in ansible_facts.packages and ansible_distribution == 'Debian' and ansible_distribution_major_version|int == 11"
 
