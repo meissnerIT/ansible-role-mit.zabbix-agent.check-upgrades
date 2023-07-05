@@ -1,0 +1,3 @@
+# Distributed via ansible - mit.zabbix-agent.check-upgrades
+zabbix	ALL = (ALL) NOPASSWD: /usr/sbin/freebsd-update --not-running-from-cron updatesready
+

@@ -1,0 +1,42 @@
+---
+
+# We now include mit.zabbix-agent.common via dependency in meta/main.yml
+# This provides handlers like "Restart zabbix-agent" and vars like "zabbix_agent_conf_dir"
+
+- name: Copy sudo rules for freebsd-update
+  copy:
+    src: FreeBSD/sudoers.d-local-mit-zabbix-agent-check-upgrades
+    dest: /usr/local/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
+    mode: 0440
+    validate: 'visudo -cf %s'
+
+# User zabbix needs a home in order to download vulnxml (even if --file is
+# give we get "pkg: pkg_audit_fetch(open out fd): Permission denied")
+# The problem might be that /var/cache/zabbix/pkg-audit is for unknown
+# reason "-r--r--r--" - needs more investigation.
+- name: Create /var/cache/zabbix
+  file:
+    path: /var/cache/zabbix
+    state: directory
+    owner: zabbix
+    group: zabbix
+
+#- name: Give user zabbix a home
+#  ansible.builtin.user:
+#    name: zabbix
+#    home: /var/cache/zabbix
+#    skeleton: /var/empty
+#    # https://github.com/ansible/ansible/issues/6854
+#  changed_when: no
+    
+- name: Add zabbix-agent configuration file
+  copy:
+    src: FreeBSD/local-userparameter_check-upgrades.conf
+    dest: "{{ zabbix_agent_conf_dir }}"
+    mode: 0644
+  notify: Restart zabbix-agent
+  become: yes
+
+#- name: Copy /etc/cron.d/local-zabbix-check-upgrades
+#  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
+
