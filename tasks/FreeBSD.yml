@@ -37,6 +37,16 @@
   notify: Restart zabbix-agent
   become: yes
 
+- name: Install checkrestart
+  package:
+    name: checkrestart
+    state: present
+
 #- name: Copy /etc/cron.d/local-zabbix-check-upgrades
 #  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
+- name: Check if processes need a restart (needstart, checkrestart) via cron / periodic
+  copy:
+    src: FreeBSD/900.zabbix-checkrestart
+    dest: /usr/local/etc/periodic/daily/
+    mode: 0755
 
