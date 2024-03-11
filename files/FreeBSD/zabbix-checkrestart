@@ -7,5 +7,5 @@
 
 LIBS=$(checkrestart|awk '! /COMMAND/ { print $4; }'|sort -u| tr "\n" ","|sed 's/,$//')
 
-sudo -u zabbix zabbix_sender -c /usr/local/etc/zabbix64/zabbix_agentd.conf -k "system.sw.needrestart.library" -o "$LIBS" 1>/dev/null
+zabbix_sender -c /usr/local/etc/zabbix64/zabbix_agentd.conf -k "system.sw.needrestart.library" -o "$LIBS" 1>/dev/null
 
