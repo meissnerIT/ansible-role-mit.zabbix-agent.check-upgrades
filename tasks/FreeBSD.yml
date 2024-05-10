@@ -37,6 +37,30 @@
   notify: Restart zabbix-agent
   become: yes
 
+- name: Install checkrestart
+  package:
+    name: checkrestart
+    state: present
+
 #- name: Copy /etc/cron.d/local-zabbix-check-upgrades
 #  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
+- name: Copy zabbix-checkrestart to /usr/local/bin/
+  copy:
+    src: FreeBSD/zabbix-checkrestart
+    dest: /usr/local/bin/
+    mode: 0755
 
+- name: Add cron for zabbix-checkrestart
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if service needs a restart
+    #special_time: hourly - save ressources, we only need this at working time
+    minute: 55
+    hour: 6-17
+    job: /usr/local/bin/zabbix-checkrestart
+
+- name: Remove deprecated files
+  file:
+    path: /usr/local/etc/periodic/daily/900.zabbix-checkrestart
+    state: absent
+    
