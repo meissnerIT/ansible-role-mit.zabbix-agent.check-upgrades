@@ -2,7 +2,7 @@
 #
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 #
-# v2021-11-17-1
+# v2024-04-17-1
 #
 # grep -q RESTART_SERVICES /etc/default/mit-check-upgrades || echo "RESTART_SERVICES=yes" | sudo tee -a /etc/default/mit-check-upgrades
 # grep -q AUTOMATIC_REBOOT /etc/default/mit-check-upgrades || echo "AUTOMATIC_REBOOT=yes" | sudo tee -a /etc/default/mit-check-upgrades
@@ -44,7 +44,7 @@ function restart_services {
     # First we use needrestart as needrestart has its own special handling of
     # special services like systemd-manager, see 
     # /etc/needrestart/restart.d/README.needrestart
-    /usr/sbin/needrestart -q -r a -l 1>/dev/null
+    /usr/sbin/needrestart -q -r a -l | logger -t $0
     # Then we use systemctl / service for restarting services needrestart 
     # skips ("Service restarts being deferred: systemd-logind.service")
     for service in $(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }'); do
