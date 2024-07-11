@@ -5,7 +5,7 @@
 
 - name: Copy sudo rules for freebsd-update
   copy:
-    src: FreeBSD/sudoers.d-local-mit-zabbix-agent-check-upgrades
+    src: FreeBSD/sudoers.d/local-mit-zabbix-agent-check-upgrades
     dest: /usr/local/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
     mode: 0440
     validate: 'visudo -cf %s'
@@ -44,11 +44,14 @@
 
 #- name: Copy /etc/cron.d/local-zabbix-check-upgrades
 #  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
-- name: Copy zabbix-checkrestart to /usr/local/bin/
+- name: Copy binary to /usr/local/bin/
   copy:
-    src: FreeBSD/zabbix-checkrestart
+    src: FreeBSD/{{ item }}
     dest: /usr/local/bin/
     mode: 0755
+  loop:
+    - zabbix-checkrestart
+    - zabbix-check-upgradeable-packages
 
 - name: Add cron for zabbix-checkrestart
   ansible.builtin.cron:
@@ -59,8 +62,17 @@
     hour: 6-17
     job: /usr/local/bin/zabbix-checkrestart
 
+- name: Add cron for zabbix-check-upgradeable-packages
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if there are upgradeable packages
+    #special_time: hourly - save ressources, we only need this at working time
+    minute: 55
+    hour: 6-17
+    job: /usr/local/bin/zabbix-checkrestart
+
 - name: Remove deprecated files
   file:
     path: /usr/local/etc/periodic/daily/900.zabbix-checkrestart
     state: absent
-    
+
