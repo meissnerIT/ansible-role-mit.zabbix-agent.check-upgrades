@@ -1,0 +1,4 @@
+# Distributed via ansible - mit.zabbix-agent.check-upgrades
+_zabbix	ALL = (ALL) NOPASSWD: /usr/local/sbin/checkrestart
+_zabbix	ALL = (ALL) NOPASSWD: /usr/sbin/syspatch -c
+
