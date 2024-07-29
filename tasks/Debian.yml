@@ -42,6 +42,7 @@
 - name: Gather the package facts
   ansible.builtin.package_facts:
     manager: auto
+  when: ansible_facts.packages is not defined
 
 - name: Logcheck rules
   # The file has to be named "local", either "a", "0-mit-zabbix-agent-check-upgrades"

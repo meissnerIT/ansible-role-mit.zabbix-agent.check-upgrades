@@ -1,4 +1,9 @@
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
+
+# Needed for zabbix-lld-jail-bases
+zabbix  ALL = (ALL) NOPASSWD: /bin/ls ^[a-z/]+/bastille/releases$
+
 zabbix	ALL = (ALL) NOPASSWD: /usr/local/bin/checkrestart
 zabbix	ALL = (ALL) NOPASSWD: /usr/sbin/freebsd-update --not-running-from-cron updatesready
+zabbix  ALL = (ALL) NOPASSWD: /usr/sbin/freebsd-update --not-running-from-cron -b * --currently-running * updatesready
 

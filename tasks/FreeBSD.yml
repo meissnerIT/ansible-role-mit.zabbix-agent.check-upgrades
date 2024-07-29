@@ -29,6 +29,11 @@
 #    # https://github.com/ansible/ansible/issues/6854
 #  changed_when: no
     
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  when: ansible_facts.packages is not defined
+
 - name: Add zabbix-agent configuration file
   copy:
     src: FreeBSD/local-userparameter_check-upgrades.conf
@@ -52,6 +57,7 @@
   loop:
     - zabbix-checkrestart
     - zabbix-check-upgradeable-packages
+    - zabbix-lld-jail-bases
 
 - name: Add cron for zabbix-checkrestart
   ansible.builtin.cron:
