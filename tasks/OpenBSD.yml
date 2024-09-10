@@ -27,7 +27,7 @@
 #  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
 - name: Copy binary to /usr/local/bin/
   copy:
-    src: FreeBSD/{{ item }}
+    src: OpenBSD/{{ item }}
     dest: /usr/local/bin/
     mode: 0755
   loop:
