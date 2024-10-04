@@ -1,21 +1,20 @@
 ---
-
 # We now include mit.zabbix-agent.common via dependency in meta/main.yml
 # This provides handlers like "Restart zabbix-agent" and vars like "zabbix_agent_conf_dir"
 
 - name: Copy sudo rules for freebsd-update
-  copy:
+  ansible.builtin.copy:
     src: FreeBSD/sudoers.d/local-mit-zabbix-agent-check-upgrades
     dest: /usr/local/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
-    mode: 0440
-    validate: 'visudo -cf %s'
+    mode: "0440"
+    validate: visudo -cf %s
 
 # User zabbix needs a home in order to download vulnxml (even if --file is
 # give we get "pkg: pkg_audit_fetch(open out fd): Permission denied")
 # The problem might be that /var/cache/zabbix/pkg-audit is for unknown
 # reason "-r--r--r--" - needs more investigation.
 - name: Create /var/cache/zabbix
-  file:
+  ansible.builtin.file:
     path: /var/cache/zabbix
     state: directory
     owner: zabbix
@@ -28,33 +27,34 @@
 #    skeleton: /var/empty
 #    # https://github.com/ansible/ansible/issues/6854
 #  changed_when: no
-    
+
 - name: Gather the package facts
   ansible.builtin.package_facts:
     manager: auto
   when: ansible_facts.packages is not defined
 
 - name: Add zabbix-agent configuration file
-  copy:
+  ansible.builtin.copy:
     src: FreeBSD/local-userparameter_check-upgrades.conf
     dest: "{{ zabbix_agent_conf_dir }}"
-    mode: 0644
+    mode: "0644"
   notify: Restart zabbix-agent
-  become: yes
+  become: true
 
 - name: Install checkrestart
-  package:
+  ansible.builtin.package:
     name: checkrestart
     state: present
 
 #- name: Copy /etc/cron.d/local-zabbix-check-upgrades
 #  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
 - name: Copy binary to /usr/local/bin/
-  copy:
+  ansible.builtin.copy:
     src: FreeBSD/{{ item }}
     dest: /usr/local/bin/
-    mode: 0755
+    mode: "0755"
   loop:
+    - needrestart
     - zabbix-checkrestart
     - zabbix-check-upgradeable-packages
     - zabbix-lld-jail-bases
@@ -78,7 +78,6 @@
     job: /usr/local/bin/zabbix-checkrestart
 
 - name: Remove deprecated files
-  file:
+  ansible.builtin.file:
     path: /usr/local/etc/periodic/daily/900.zabbix-checkrestart
     state: absent
-
