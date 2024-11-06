@@ -1,44 +1,47 @@
 ---
-
 # We now include mit.zabbix-agent.common via dependency in meta/main.yml
 # This provides handlers like "Restart zabbix-agent" and vars like "zabbix_agent_conf_dir"
 
 - name: Ensure needrestart is installed
-  apt: pkg=needrestart
-
+  ansible.builtin.apt:
+    pkg: needrestart
 - name: Ensure zabbix_sender is installed
-  shell: test -f /usr/bin/zabbix_sender
-  changed_when: no
+  ansible.builtin.command: test -f /usr/bin/zabbix_sender
+  changed_when: false
 
 - name: Copy sudo rules for needrestart
-  copy:
+  ansible.builtin.copy:
     src: sudoers.d-local-mit-zabbix-agent-check-upgrades
     dest: /etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
-    mode: 0440
-    validate: 'visudo -cf %s'
+    mode: "0440"
+    validate: visudo -cf %s
 
 - name: Add zabbix-agent configuration file
-  copy:
+  ansible.builtin.copy:
     src: local-userparameter_check-upgrades.conf
     dest: "{{ zabbix_agent_conf_dir }}"
-    mode: 0644
+    mode: "0644"
   notify: Restart zabbix-agent
-  become: yes
+  become: true
 
 - name: Copy /etc/default/mit-check-upgrades
-  copy: src=mit-check-upgrades dest=/etc/default/mit-check-upgrades force=no 
-
+  ansible.builtin.copy:
+    src: mit-check-upgrades
+    dest: /etc/default/mit-check-upgrades
+    force: "no"
 - name: Copy /usr/local/sbin/zabbix-check-upgrades
-  copy: src=zabbix-check-upgrades dest=/usr/local/sbin/zabbix-check-upgrades mode=0755
-
+  ansible.builtin.copy:
+    src: zabbix-check-upgrades
+    dest: /usr/local/sbin/zabbix-check-upgrades
+    mode: "0755"
 - name: Copy /etc/cron.d/local-zabbix-check-upgrades
-  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
-# 2020-07-10: Don't know why kcvmsrv3 was disabled
-#  when: "'kcvmsrv3' not in inventory_hostname"
-
+  ansible.builtin.copy:
+    src: cron.d-local-zabbix-check-upgrades
+    dest: /etc/cron.d/local-zabbix-check-upgrades
 - name: Remove deprecated /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
-  file: path=/var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1 state=absent
-
+  ansible.builtin.file:
+    path: /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
+    state: absent
 - name: Gather the package facts
   ansible.builtin.package_facts:
     manager: auto
@@ -48,9 +51,8 @@
   # The file has to be named "local", either "a", "0-mit-zabbix-agent-check-upgrades"
   # or "mit-zabbix-agent-check-upgrades" do not work. Test with:
   # sudo -u logcheck logcheck -o -t -d -l /var/log/auth.log
-  lineinfile:
-    create: yes
+  ansible.builtin.lineinfile:
+    create: true
     path: /etc/logcheck/violations.ignore.d/local
-    line: '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:   zabbix : PWD=\/ ; USER=root ; COMMAND=\/usr\/sbin\/needrestart -b -r l -k$'
+    line: "^\\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:   zabbix : PWD=\\/ ; USER=root ; COMMAND=\\/usr\\/sbin\\/needrestart -b -r l -k$"
   when: "'logcheck' in ansible_facts.packages and ansible_distribution == 'Debian' and ansible_distribution_major_version|int == 11"
-

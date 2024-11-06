@@ -75,7 +75,7 @@
     #special_time: hourly - save ressources, we only need this at working time
     minute: 55
     hour: 6-17
-    job: /usr/local/bin/zabbix-checkrestart
+    job: /usr/local/bin/zabbix-check-upgradeable-packages
 
 - name: Remove deprecated files
   ansible.builtin.file:
