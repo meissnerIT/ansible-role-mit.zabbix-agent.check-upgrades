@@ -35,7 +35,6 @@
     src: zabbix-check-upgrades
     dest: /usr/local/sbin/zabbix-check-upgrades
     mode: "0755"
-
 - name: Copy /etc/cron.d/local-zabbix-check-upgrades
   ansible.builtin.copy:
     src: cron.d-local-zabbix-check-upgrades
