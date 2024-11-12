@@ -1,0 +1,2 @@
+RESTART_SERVICES={{ mit_zabbix_agent_check_upgrades_restart_services|default("yes") }}
+AUTOMATIC_REBOOT={{ mit_zabbix_agent_check_upgrades_automatic_reboot|default("yes") }}
