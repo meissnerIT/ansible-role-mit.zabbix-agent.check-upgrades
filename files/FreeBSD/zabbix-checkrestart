@@ -5,8 +5,10 @@
 #
 # 2024-02-09: Beautified output
 # 2024-11-06: Added parameter -v (verbose)
+# 2024-11-07: Excludes jails
 
-LIBS=$(sudo /usr/local/bin/checkrestart|awk '! /COMMAND/ { print $4; }'|sort -u| tr "\n" ","|sed 's/,$//')
+# Second column of output is the jail id
+LIBS=$(sudo /usr/local/bin/checkrestart -H | awk '($2 == 0) { print $4; }' | sort -u | tr "\n" "," | sed 's/,$//')
 
 # -v: verbose
 if [ "$1" == "-v" ]; then
