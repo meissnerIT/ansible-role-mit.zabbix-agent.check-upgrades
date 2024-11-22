@@ -9,6 +9,10 @@
   ansible.builtin.command: test -f /usr/bin/zabbix_sender
   changed_when: false
 
+- name: Copy needrestart blacklist
+  copy:
+    src: etc/needrestart/conf.d/local-blacklist.conf
+    dest: /etc/needrestart/conf.d/
 - name: Copy sudo rules for needrestart
   ansible.builtin.copy:
     src: etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
