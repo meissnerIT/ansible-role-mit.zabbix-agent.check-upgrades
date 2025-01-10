@@ -64,7 +64,7 @@
     user: zabbix
     name: Check if service needs a restart
     #special_time: hourly - save ressources, we only need this at working time
-    minute: 55
+    minute: 56
     hour: 6-17
     job: /usr/local/bin/zabbix-checkrestart
 
@@ -73,7 +73,7 @@
     user: zabbix
     name: Check if there are upgradeable packages
     #special_time: hourly - save ressources, we only need this at working time
-    minute: 55
+    minute: 57
     hour: 6-17
     job: /usr/local/bin/zabbix-check-upgradeable-packages
 
