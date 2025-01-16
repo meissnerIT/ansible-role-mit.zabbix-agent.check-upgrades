@@ -22,21 +22,39 @@
     name: checkrestart
     state: present
 
-#- name: Copy /etc/cron.d/local-zabbix-check-upgrades
+# - name: Copy /etc/cron.d/local-zabbix-check-upgrades
 #  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
-- name: Copy binary to /usr/local/bin/
+- name: Copy binary to /opt/bin/
   ansible.builtin.copy:
     src: OpenBSD/{{ item }}
-    dest: /usr/local/bin/
+    dest: /opt/bin/
     mode: "0755"
   loop:
-    - zabbix-checkrestart
+    - zabbix-check-upgradeable-packages-system
+    - zabbix-checkrestart-service
 
 - name: Add cron for zabbix-checkrestart
   ansible.builtin.cron:
     user: _zabbix
     name: Check if service needs a restart
-    #special_time: hourly - save ressources, we only need this at working time
+    # special_time: hourly - save ressources, we only need this at working time
     minute: 55
     hour: 6-17
-    job: /usr/local/bin/zabbix-checkrestart
+    job: /opt/bin/zabbix-checkrestart-service
+
+- name: Add cron for zabbix-check-upgradeable-packages-system
+  ansible.builtin.cron:
+    user: _zabbix
+    name: Check if there are upgradeable system packages
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 57
+    hour: 6-17
+    job: /opt/bin/zabbix-check-upgradeable-packages-system
+
+- name: Remove deprecated files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /opt/bin/zabbix-checkrestart
+    - /usr/local/bin/zabbix-checkrestart

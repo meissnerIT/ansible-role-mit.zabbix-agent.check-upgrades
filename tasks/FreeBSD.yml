@@ -2,10 +2,14 @@
 # We now include mit.zabbix-agent.common via dependency in meta/main.yml
 # This provides handlers like "Restart zabbix-agent" and vars like "zabbix_agent_conf_dir"
 
+- name: Set is_jail
+  ansible.builtin.set_fact:
+    is_jail: "{{ 'jails' in ansible_virtualization_tech_guest }}"
+
 - name: Copy sudo rules for freebsd-update
   ansible.builtin.copy:
     src: FreeBSD/sudoers.d/local-mit-zabbix-agent-check-upgrades
-    dest: /usr/local/etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
+    dest: /usr/local/etc/sudoers.d/
     mode: "0440"
     validate: visudo -cf %s
 
@@ -19,8 +23,9 @@
     state: directory
     owner: zabbix
     group: zabbix
+    mode: '755'
 
-#- name: Give user zabbix a home
+# - name: Give user zabbix a home
 #  ansible.builtin.user:
 #    name: zabbix
 #    home: /var/cache/zabbix
@@ -46,38 +51,92 @@
     name: checkrestart
     state: present
 
-#- name: Copy /etc/cron.d/local-zabbix-check-upgrades
-#  copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
-- name: Copy binary to /usr/local/bin/
+# - name: Copy /etc/cron.d/local-zabbix-check-upgrades
+#   copy: src=cron.d-local-zabbix-check-upgrades dest=/etc/cron.d/local-zabbix-check-upgrades
+- name: Copy binaries
   ansible.builtin.copy:
     src: FreeBSD/{{ item }}
-    dest: /usr/local/bin/
+    dest: /opt/bin/
     mode: "0755"
   loop:
     - needrestart
-    - zabbix-checkrestart
-    - zabbix-check-upgradeable-packages
     - zabbix-lld-jail-bases
 
-- name: Add cron for zabbix-checkrestart
+- name: Copy binaries (non jails)
+  ansible.builtin.template:
+    src: FreeBSD/{{ item }}
+    dest: /opt/bin/
+    mode: "0755"
+  loop:
+    - zabbix-checkrestart-kernel
+    - zabbix-check-upgradeable-packages-system
+  when: not is_jail
+
+# As state is not supported by ansible.builtin.template we remove the files here.
+- name: Remove deprecated files on jail
+  ansible.builtin.file:
+    path: /opt/bin/{{ item }}
+    state: "absent"
+  loop:
+    - zabbix-checkrestart-kernel
+    - zabbix-check-upgradeable-packages-system
+  when: is_jail
+
+- name: Copy binaries
+  ansible.builtin.template:
+    src: FreeBSD/{{ item }}
+    dest: /opt/bin/
+    mode: "0755"
+  loop:
+    - zabbix-checkrestart-service
+    - zabbix-check-upgradeable-packages-pkgs
+
+- name: Add cron for zabbix-checkrestart-kernel
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if kernel needs a restart
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 55
+    hour: 6-17
+    job: /opt/bin/zabbix-checkrestart-kernel
+    state: "{{ 'absent' if (is_jail) else 'present' }}"
+
+- name: Add cron for zabbix-checkrestart-service
   ansible.builtin.cron:
     user: zabbix
     name: Check if service needs a restart
-    #special_time: hourly - save ressources, we only need this at working time
+    # special_time: hourly - save ressources, we only need this at working time
     minute: 56
     hour: 6-17
-    job: /usr/local/bin/zabbix-checkrestart
+    job: /opt/bin/zabbix-checkrestart-service
 
-- name: Add cron for zabbix-check-upgradeable-packages
+- name: Add cron for zabbix-check-upgradeable-packages-system
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if there are upgradeable system packages
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 57
+    hour: 6-17
+    job: /opt/bin/zabbix-check-upgradeable-packages-system
+    state: "{{ 'absent' if (is_jail) else 'present' }}"
+
+- name: Add cron for zabbix-check-upgradeable-packages-pkgs
   ansible.builtin.cron:
     user: zabbix
     name: Check if there are upgradeable packages
-    #special_time: hourly - save ressources, we only need this at working time
-    minute: 57
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 58
     hour: 6-17
-    job: /usr/local/bin/zabbix-check-upgradeable-packages
+    job: /opt/bin/zabbix-check-upgradeable-packages-pkgs
 
 - name: Remove deprecated files
   ansible.builtin.file:
-    path: /usr/local/etc/periodic/daily/900.zabbix-checkrestart
+    path: "{{ item }}"
     state: absent
+  loop:
+    - /opt/bin/zabbix-checkrestart
+    - /usr/local/etc/periodic/daily/900.zabbix-checkrestart
+    - /usr/local/bin/needrestart
+    - /usr/local/bin/zabbix-checkrestart
+    - /usr/local/bin/zabbix-check-upgradeable-packages
+    - /usr/local/bin/zabbix-lld-jail-bases
