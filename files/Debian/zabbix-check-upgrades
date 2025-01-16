@@ -72,8 +72,7 @@ if [ "${RESTART_SERVICES}" = "yes" ]; then
     fi
 fi
 
-VALUE="$(/usr/sbin/needrestart -b -r l -l | awk ' /NEEDRESTART-SVC: / { print $2; }' | tr "\n" "," | sed 's/,$//')"
-/usr/bin/zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.library" -o "${VALUE}" 1>/dev/null
+/opt/bin/zabbix-checkrestart-service
 
 # arg $1: Reason for reboot (logger)
 reboot_if_allowed() {

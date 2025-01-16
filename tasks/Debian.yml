@@ -10,19 +10,20 @@
   changed_when: false
 
 - name: Copy needrestart blacklist
-  copy:
-    src: etc/needrestart/conf.d/local-blacklist.conf
+  ansible.builtin.copy:
+    src: Debian/needrestart/conf.d/local-blacklist.conf
     dest: /etc/needrestart/conf.d/
+    mode: '644'
 - name: Copy sudo rules for needrestart
   ansible.builtin.copy:
-    src: etc/sudoers.d/local-mit-zabbix-agent-check-upgrades
+    src: Debian/sudoers.d/local-mit-zabbix-agent-check-upgrades
     dest: /etc/sudoers.d/
     mode: "0440"
     validate: visudo -cf %s
 
 - name: Add zabbix-agent configuration file
   ansible.builtin.copy:
-    src: local-userparameter_check-upgrades.conf
+    src: Debian/local-userparameter_check-upgrades.conf
     dest: "{{ zabbix_agent_conf_dir }}"
     mode: "0644"
   notify: Restart zabbix-agent
@@ -30,19 +31,56 @@
 
 - name: Copy /etc/default/mit-check-upgrades
   ansible.builtin.template:
-    src: mit-check-upgrades
+    src: Debian/mit-check-upgrades
     dest: /etc/default/mit-check-upgrades
+    mode: '644'
     force: "no"
 
-- name: Copy /usr/local/sbin/zabbix-check-upgrades
+- name: Copy binaries
   ansible.builtin.copy:
-    src: zabbix-check-upgrades
-    dest: /usr/local/sbin/zabbix-check-upgrades
+    src: Debian/{{ item }}
+    dest: /opt/bin/
     mode: "0755"
+  loop:
+    - zabbix-check-upgradeable-packages-system
+    - zabbix-check-upgrades
+    - zabbix-checkrestart-kernel
+    - zabbix-checkrestart-service
+
 - name: Copy /etc/cron.d/local-zabbix-check-upgrades
   ansible.builtin.copy:
-    src: cron.d-local-zabbix-check-upgrades
-    dest: /etc/cron.d/local-zabbix-check-upgrades
+    src: Debian/cron.d/local-zabbix-check-upgrades
+    dest: /etc/cron.d/
+    mode: '644'
+
+- name: Add cron for zabbix-checkrestart-kernel
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if kernel needs a restart
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 55
+    hour: 6-17
+    job: /opt/bin/zabbix-checkrestart-kernel
+
+# On Debian we call zabbix-checkrestart-service from zabbix-check-upgrades
+- name: Remove cron for zabbix-checkrestart-service (will be called from zabbix-check-upgrades)
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if service needs a restart
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 56
+    hour: 6-17
+    job: /opt/bin/zabbix-checkrestart-service
+    state: absent
+
+- name: Add cron for zabbix-check-upgradeable-packages-system
+  ansible.builtin.cron:
+    user: zabbix
+    name: Check if there are upgradeable system packages
+    # special_time: hourly - save ressources, we only need this at working time
+    minute: 57
+    hour: 6-17
+    job: /opt/bin/zabbix-check-upgradeable-packages-system
 
 - name: Remove deprecated /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
   ansible.builtin.file:
@@ -60,5 +98,14 @@
   ansible.builtin.lineinfile:
     create: true
     path: /etc/logcheck/violations.ignore.d/local
-    line: "^\\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:   zabbix : PWD=\\/ ; USER=root ; COMMAND=\\/usr\\/sbin\\/needrestart -b -r l -k$"
+    line: "^\\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:   zabbix : PWD=.* ; USER=root ; COMMAND=\\/usr\\/sbin\\/needrestart -b -r l -k$"
+    mode: '644'
   when: "'logcheck' in ansible_facts.packages and ansible_distribution == 'Debian' and ansible_distribution_major_version|int == 11"
+
+- name: Remove deprecated files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /opt/bin/zabbix-checkrestart
+    - /usr/local/sbin/zabbix-check-upgrades
