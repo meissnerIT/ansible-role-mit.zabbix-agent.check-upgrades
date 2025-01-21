@@ -1,6 +1,5 @@
 # Distributed via ansible - mit.zabbix-agent.check-upgrades
 
-#19078: needrestart auf otrs01 sichten -> Use of runtime loader module Module"
 # 2020-06-29: Added "Failed to check for VM: Transport endpoint is not connected"
 # 2022-11-14: Disabled stdout and stderr
 */5 * * * *     root    /opt/bin/zabbix-check-upgrades >/dev/null 2>&1
