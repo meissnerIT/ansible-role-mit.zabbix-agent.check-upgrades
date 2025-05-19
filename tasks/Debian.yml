@@ -2,6 +2,10 @@
 # We now include mit.zabbix-agent.common via dependency in meta/main.yml
 # This provides handlers like "Restart zabbix-agent" and vars like "zabbix_agent_conf_dir"
 
+- name: Set is_lxc
+  ansible.builtin.set_fact:
+    is_lxc: "{{ 'lxc' in ansible_virtualization_tech_guest }}"
+
 - name: Ensure needrestart is installed
   ansible.builtin.apt:
     pkg: needrestart
@@ -13,7 +17,7 @@
   ansible.builtin.copy:
     src: Debian/needrestart/conf.d/local-blacklist.conf
     dest: /etc/needrestart/conf.d/
-    mode: '644'
+    mode: "644"
 - name: Copy sudo rules for needrestart
   ansible.builtin.copy:
     src: Debian/sudoers.d/local-mit-zabbix-agent-check-upgrades
@@ -33,7 +37,7 @@
   ansible.builtin.template:
     src: Debian/mit-check-upgrades
     dest: /etc/default/mit-check-upgrades
-    mode: '644'
+    mode: "644"
     force: "no"
 
 - name: Copy binaries
@@ -51,9 +55,9 @@
   ansible.builtin.copy:
     src: Debian/cron.d/local-zabbix-check-upgrades
     dest: /etc/cron.d/
-    mode: '644'
+    mode: "644"
 
-- name: Add cron for zabbix-checkrestart-kernel
+- name: Configure cron for zabbix-checkrestart-kernel
   ansible.builtin.cron:
     user: zabbix
     name: Check if kernel needs a restart
@@ -61,6 +65,7 @@
     minute: 55
     hour: 6-17
     job: /opt/bin/zabbix-checkrestart-kernel
+    state: "{{ 'absent' if (is_lxc) else 'present' }}"
 
 # On Debian we call zabbix-checkrestart-service from zabbix-check-upgrades
 - name: Remove cron for zabbix-checkrestart-service (will be called from zabbix-check-upgrades)
@@ -99,7 +104,7 @@
     create: true
     path: /etc/logcheck/violations.ignore.d/local
     line: "^\\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:   zabbix : PWD=.* ; USER=root ; COMMAND=\\/usr\\/sbin\\/needrestart -b -r l -k$"
-    mode: '644'
+    mode: "644"
   when: "'logcheck' in ansible_facts.packages and ansible_distribution == 'Debian' and ansible_distribution_major_version|int == 11"
 
 - name: Remove deprecated files
