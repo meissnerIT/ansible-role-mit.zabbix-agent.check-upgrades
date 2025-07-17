@@ -2,6 +2,12 @@
 # We now include mit.zabbix-agent.common via dependency in meta/main.yml
 # This provides handlers like "Restart zabbix-agent" and vars like "zabbix_agent_conf_dir"
 
+# Can be removed if link is everywhere. Link is needed for scripts,
+# e.g. zabbix-check-upgradeable-packages-pkgs
+- name: Check if /usr/local/etc/zabbix/zabbix_agentd.conf is a symbolic link
+  ansible.builtin.command: test -s /usr/local/etc/zabbix/zabbix_agentd.conf
+  changed_when: false
+
 - name: Set is_jail
   ansible.builtin.set_fact:
     is_jail: "{{ 'jails' in ansible_virtualization_tech_guest }}"
@@ -23,7 +29,7 @@
     state: directory
     owner: zabbix
     group: zabbix
-    mode: '755'
+    mode: "755"
 
 # - name: Give user zabbix a home
 #  ansible.builtin.user:
@@ -44,7 +50,12 @@
     dest: "{{ zabbix_agent_conf_dir }}"
     mode: "0644"
   notify: Restart zabbix-agent
-  become: true
+
+- name: Add mit-zabbix-lld-no-agent-jails.conf
+  ansible.builtin.template:
+    src: FreeBSD/mit-zabbix-lld-no-agent-jails.conf
+    dest: /usr/local/etc/zabbix/mit-zabbix-lld-no-agent-jails.conf
+    mode: "0644"
 
 - name: Install checkrestart
   ansible.builtin.package:
@@ -60,16 +71,19 @@
     mode: "0755"
   loop:
     - needrestart
-    - zabbix-lld-jail-bases
+    - zabbix-check-upgradeable-packages-pkgs
+    - zabbix-checkrestart-service
 
-- name: Copy binaries (non jails)
-  ansible.builtin.template:
+- name: Copy binaries (no jails)
+  ansible.builtin.copy:
     src: FreeBSD/{{ item }}
     dest: /opt/bin/
     mode: "0755"
   loop:
-    - zabbix-checkrestart-kernel
     - zabbix-check-upgradeable-packages-system
+    - zabbix-checkrestart-kernel
+    - zabbix-lld-jail-bases
+    - zabbix-lld-no-agent-jails
   when: not is_jail
 
 # As state is not supported by ansible.builtin.template we remove the files here.
@@ -81,15 +95,6 @@
     - zabbix-checkrestart-kernel
     - zabbix-check-upgradeable-packages-system
   when: is_jail
-
-- name: Copy binaries
-  ansible.builtin.template:
-    src: FreeBSD/{{ item }}
-    dest: /opt/bin/
-    mode: "0755"
-  loop:
-    - zabbix-checkrestart-service
-    - zabbix-check-upgradeable-packages-pkgs
 
 - name: Add cron for zabbix-checkrestart-kernel
   ansible.builtin.cron:

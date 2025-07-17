@@ -8,7 +8,7 @@ VALUE=$(/usr/local/bin/sudo freebsd-update --not-running-from-cron updatesready 
 # -v: verbose
 if [ "$1" = "-v" ]; then
     echo "Transmitting system.sw.upgradeable-packages.system='$VALUE'"
-    zabbix_sender -c /usr/local/etc/{{ zabbix_agent_pkg_name_prefix }}/zabbix_agentd.conf -k "system.sw.upgradeable-packages.system" -o "$VALUE"
+    zabbix_sender -c /usr/local/etc/zabbix/zabbix_agentd.conf -k "system.sw.upgradeable-packages.system" -o "$VALUE"
 else
-    zabbix_sender -c /usr/local/etc/{{ zabbix_agent_pkg_name_prefix }}/zabbix_agentd.conf -k "system.sw.upgradeable-packages.system" -o "$VALUE" 1>/dev/null
+    zabbix_sender -c /usr/local/etc/zabbix/zabbix_agentd.conf -k "system.sw.upgradeable-packages.system" -o "$VALUE" 1>/dev/null
 fi

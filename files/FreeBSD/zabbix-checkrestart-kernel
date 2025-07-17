@@ -8,7 +8,7 @@ VALUE=$(/opt/bin/needrestart | awk ' /NEEDRESTART-KSTA:/ { print $2; }')
 # -v: verbose
 if [ "$1" = "-v" ]; then
     echo "Transmitting system.sw.needrestart.kernel='$VALUE'"
-    zabbix_sender -c /usr/local/etc/{{ zabbix_agent_pkg_name_prefix }}/zabbix_agentd.conf -k "system.sw.needrestart.kernel" -o "$VALUE"
+    zabbix_sender -c /usr/local/etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.kernel" -o "$VALUE"
 else
-    zabbix_sender -c /usr/local/etc/{{ zabbix_agent_pkg_name_prefix }}/zabbix_agentd.conf -k "system.sw.needrestart.kernel" -o "$VALUE" 1>/dev/null
+    zabbix_sender -c /usr/local/etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.kernel" -o "$VALUE" 1>/dev/null
 fi

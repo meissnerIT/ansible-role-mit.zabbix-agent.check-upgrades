@@ -13,7 +13,7 @@ VALUE=$(sudo /usr/local/bin/checkrestart -H | awk '($2 == 0) { print $4; }' | so
 # -v: verbose
 if [ "$1" = "-v" ]; then
     echo "Transmitting system.sw.needrestart.service='$VALUE'"
-    zabbix_sender -c /usr/local/etc/{{ zabbix_agent_pkg_name_prefix }}/zabbix_agentd.conf -k "system.sw.needrestart.service" -o "$VALUE"
+    zabbix_sender -c /usr/local/etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.service" -o "$VALUE"
 else
-    zabbix_sender -c /usr/local/etc/{{ zabbix_agent_pkg_name_prefix }}/zabbix_agentd.conf -k "system.sw.needrestart.service" -o "$VALUE" 1>/dev/null
+    zabbix_sender -c /usr/local/etc/zabbix/zabbix_agentd.conf -k "system.sw.needrestart.service" -o "$VALUE" 1>/dev/null
 fi
