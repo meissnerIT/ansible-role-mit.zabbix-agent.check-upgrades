@@ -40,15 +40,6 @@ send_audit() {
     send_to_zabbix "$key" "$value"
 }
 
-# No parameter, only on host
-send_audit_kernel() {
-    chmod 644 /var/cache/zabbix/pkg-audit
-    key="system.sw.upgradeable-packages.pkg-audit-kernel"
-    value=$(pkg audit --fetch --file /var/cache/zabbix/pkg-audit --raw=json --recursive --quiet $(freebsd-version -k|sed 's,^,FreeBSD-kernel-,;s,-RELEASE-p,_,;s,-RELEASE$,,'))
-
-    send_to_zabbix "$key" "$value"
-}
-
 # $1: Name of the jail
 send_upgradeable_packages() {
     key_opt=""
@@ -69,14 +60,12 @@ send_upgradeable_packages() {
 
 # Check host system
 send_audit ""
-send_audit_kernel
 send_upgradeable_packages ""
 
 # Check all jails
 jls -h name 2>/dev/null | tail -n +2 | grep -E "$regexp" | while read name; do
     if [ -n "$name" ]; then
         send_audit "$name"
-        # send_audit_kernel only on host
         send_upgradeable_packages "$name"
     fi
 done
