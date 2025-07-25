@@ -91,12 +91,14 @@
   ansible.builtin.file:
     path: /var/lib/misc/zabbix-check-upgrades-dpkg-log.sha1
     state: absent
+
 - name: Gather the package facts
   ansible.builtin.package_facts:
     manager: auto
   when: ansible_facts.packages is not defined
 
 - name: Logcheck rules
+  # Security Events for sudo
   # The file has to be named "local", either "a", "0-mit-zabbix-agent-check-upgrades"
   # or "mit-zabbix-agent-check-upgrades" do not work. Test with:
   # sudo -u logcheck logcheck -o -t -d -l /var/log/auth.log
